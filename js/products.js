@@ -100,7 +100,7 @@ function renderProductCards(products, container, mode = 'customer') {
             card.innerHTML = `
                 <div class="product-image-container" style="position:relative; overflow:hidden;">
                     ${imgHTML}
-                    <button class="wishlist-btn"><i class='bx bx-heart'></i></button>
+                    <button class="wishlist-btn" onclick="addToWishlist(${p.id}, event)" title="Add to Wishlist"><i class='bx bx-heart'></i></button>
                     <span style="position:absolute;top:10px;left:10px;background:var(--secondary-color);color:white;font-size:0.7rem;padding:3px 10px;border-radius:20px;font-weight:700;">NEW</span>
                 </div>
                 <div class="product-details">
@@ -155,9 +155,97 @@ function renderProductCards(products, container, mode = 'customer') {
     });
 }
 
+// ---- requireAuth ------------------------------------------------
+// Shows a branded sign-in prompt; returns true if logged in
+function requireAuth(action) {
+    try {
+        const user = JSON.parse(localStorage.getItem('desi_user') || 'null');
+        if (user && user.uid) return true;  // authenticated
+    } catch (e) {}
+
+    // Not signed in — show prompt overlay
+    const existing = document.getElementById('_authPromptOverlay');
+    if (existing) existing.remove();
+
+    const overlay = document.createElement('div');
+    overlay.id = '_authPromptOverlay';
+    overlay.style.cssText = [
+        'position:fixed', 'inset:0', 'z-index:99999',
+        'display:flex', 'align-items:center', 'justify-content:center',
+        'background:rgba(0,0,0,0.55)', 'backdrop-filter:blur(6px)',
+        'animation:fadeIn .2s ease',
+    ].join(';');
+
+    const returnUrl = encodeURIComponent(window.location.href);
+    overlay.innerHTML = `
+        <div style="
+            background:var(--background-light, #fff);
+            border-radius:24px;
+            padding:2.5rem 2rem;
+            max-width:380px;
+            width:90%;
+            text-align:center;
+            box-shadow:0 20px 60px rgba(0,0,0,0.3);
+            position:relative;
+        ">
+            <button onclick="document.getElementById('_authPromptOverlay').remove()"
+                style="position:absolute;top:1rem;right:1rem;background:none;border:none;font-size:1.4rem;cursor:pointer;color:#999;line-height:1;"
+                aria-label="Close">&times;</button>
+            <div style="font-size:3rem;margin-bottom:0.75rem;">🔐</div>
+            <h3 style="margin:0 0 0.5rem;color:var(--primary-color,#2F4F4F);font-size:1.3rem;">Sign In Required</h3>
+            <p style="color:#666;margin:0 0 1.75rem;font-size:0.95rem;line-height:1.5;">
+                Please sign in to <strong>${action}</strong>.<br>
+                Join our community of artisan lovers!
+            </p>
+            <a href="login.html?next=${returnUrl}"
+               style="display:inline-block;padding:0.8rem 2rem;background:var(--secondary-color,#E2725B);color:white;border-radius:50px;text-decoration:none;font-weight:700;font-size:1rem;width:100%;box-sizing:border-box;transition:opacity .2s;"
+               onmouseover="this.style.opacity='.88'" onmouseout="this.style.opacity='1'">
+               <i class='bx bx-log-in' style='margin-right:6px;'></i>Sign In
+            </a>
+            <a href="register.html"
+               style="display:block;margin-top:0.85rem;color:var(--primary-color,#2F4F4F);font-size:0.88rem;text-decoration:none;">
+               No account? <strong>Register free ›</strong>
+            </a>
+        </div>`;
+
+    document.body.appendChild(overlay);
+    // Close on backdrop click
+    overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
+    return false;
+}
+
+// ---- addToWishlist -----------------------------------------------
+function addToWishlist(productId, event) {
+    if (event) event.stopPropagation();
+    if (!requireAuth('add to wishlist')) return;
+
+    const products = loadProducts();
+    const product  = products.find(p => p.id === productId);
+    if (!product) return;
+
+    try {
+        const wishlist = JSON.parse(localStorage.getItem('desi_wishlist') || '[]');
+        const exists   = wishlist.find(i => i.id === productId);
+        if (!exists) {
+            wishlist.push({ id: product.id, productName: product.productName,
+                            price: product.price, image: product.image,
+                            artisanName: product.artisanName });
+            localStorage.setItem('desi_wishlist', JSON.stringify(wishlist));
+        }
+        // Toggle heart icon
+        const btn = event ? event.currentTarget : document.querySelector(`[onclick*="addToWishlist(${productId}"]`);
+        if (btn) {
+            btn.innerHTML = "<i class='bx bxs-heart' style='color:#e74c3c;'></i>";
+            btn.title     = 'Added to wishlist!';
+        }
+    } catch (e) { console.error('Wishlist error:', e); }
+}
+
 // ---- addToCart ---------------------------------------------------
 // Called from customer card "Add to Cart" buttons
 function addToCart(productId) {
+    if (!requireAuth('add to cart')) return;   // ← auth guard
+
     const products = loadProducts();
     const product  = products.find(p => p.id === productId);
     if (!product) return;
