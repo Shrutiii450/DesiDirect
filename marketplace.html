@@ -35,7 +35,25 @@
                 <span style="position:absolute; top:-5px; right:-10px; background:var(--secondary-color); color:white; font-size:0.6rem; border-radius:50%; width:18px; height:18px; display:flex; align-items:center; justify-content:center; font-weight: bold;">2</span>
             </a>
             <a href="login.html" class="cta-button primary" style="text-decoration:none; padding: 0.5rem 1.25rem; background-color: red; border-color: red;">Sign In</a>
+            <button class="hamburger" id="hamburger" aria-label="Toggle menu" aria-expanded="false">
+                <span></span><span></span><span></span>
+            </button>
         </div>
+    </nav>
+
+    <!-- Mobile Navigation Overlay & Drawer -->
+    <div class="mobile-nav-overlay" id="mobileNavOverlay"></div>
+    <nav class="mobile-nav-drawer" id="mobileNavDrawer" aria-hidden="true">
+        <div class="mobile-drawer-brand">
+            <img src="assets/images/logo.png" alt="DesiDirect">
+        </div>
+        <a href="index.html"><i class='bx bx-home'></i> Home</a>
+        <a href="marketplace.html"><i class='bx bx-compass'></i> Discover</a>
+        <a href="artisans.html"><i class='bx bx-palette'></i> Artisans</a>
+        <a href="products.html"><i class='bx bx-store'></i> Products</a>
+        <a href="about.html"><i class='bx bx-book-heart'></i> Our Story</a>
+        <a href="cart.html"><i class='bx bx-shopping-bag'></i> Cart</a>
+        <a href="login.html" class="mobile-nav-signin"><i class='bx bx-log-in'></i> Sign In</a>
     </nav>
 
     <div class="page-layout">
@@ -160,6 +178,7 @@
     <script src="js/app.js"></script>
     <script src="js/animations.js"></script>
     <script type="module" src="js/auth-sync.js"></script>
+    <script src="js/mobile-nav.js"></script>
 </body>
 
 </html>

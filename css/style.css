@@ -944,7 +944,134 @@ footer {
     font-size: 0.85rem;
 }
 
-/* Responsive Design */
+/* =========================================
+   HAMBURGER / MOBILE NAVIGATION DRAWER
+   ========================================= */
+
+/* Hamburger button (hidden on desktop) */
+.hamburger {
+    display: none;
+    flex-direction: column;
+    justify-content: space-around;
+    width: 28px;
+    height: 22px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0;
+    z-index: 300;
+}
+
+.hamburger span {
+    display: block;
+    width: 100%;
+    height: 2px;
+    background: var(--primary-color);
+    border-radius: 4px;
+    transition: all 0.35s cubic-bezier(0.165, 0.84, 0.44, 1);
+    transform-origin: center;
+}
+
+.hamburger.open span:nth-child(1) {
+    transform: translateY(10px) rotate(45deg);
+}
+.hamburger.open span:nth-child(2) {
+    opacity: 0;
+    transform: scaleX(0);
+}
+.hamburger.open span:nth-child(3) {
+    transform: translateY(-10px) rotate(-45deg);
+}
+
+/* Mobile slide-in navigation drawer */
+.mobile-nav-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.45);
+    z-index: 200;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    backdrop-filter: blur(4px);
+}
+
+.mobile-nav-overlay.open {
+    opacity: 1;
+}
+
+.mobile-nav-drawer {
+    position: fixed;
+    top: 0;
+    right: -100%;
+    width: min(80vw, 320px);
+    height: 100dvh;
+    background: var(--background-light);
+    z-index: 250;
+    display: flex;
+    flex-direction: column;
+    padding: 5rem 2rem 2rem;
+    transition: right 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
+    box-shadow: -10px 0 40px rgba(0,0,0,0.15);
+    overflow-y: auto;
+}
+
+.mobile-nav-drawer.open {
+    right: 0;
+}
+
+.mobile-nav-drawer a {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 1rem 0.5rem;
+    text-decoration: none;
+    color: var(--text-primary);
+    font-family: 'Outfit', sans-serif;
+    font-size: 1.15rem;
+    font-weight: 600;
+    border-bottom: 1px solid rgba(47,79,79,0.08);
+    transition: color 0.2s ease, padding-left 0.2s ease;
+}
+
+.mobile-nav-drawer a:hover {
+    color: var(--secondary-color);
+    padding-left: 1rem;
+}
+
+.mobile-nav-drawer .mobile-nav-signin {
+    margin-top: 2rem;
+    background: var(--primary-color);
+    color: white !important;
+    border-radius: 50px;
+    justify-content: center;
+    border-bottom: none;
+    padding: 1rem !important;
+}
+
+.mobile-nav-drawer .mobile-nav-signin:hover {
+    background: var(--secondary-color);
+    padding-left: 1rem !important;
+}
+
+.mobile-drawer-brand {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding-bottom: 1.5rem;
+    margin-bottom: 1rem;
+    border-bottom: 2px solid rgba(47,79,79,0.12);
+}
+
+.mobile-drawer-brand img {
+    height: 50px;
+    width: auto;
+    object-fit: contain;
+}
+
+/* =========================================
+   RESPONSIVE DESIGN — BREAKPOINTS
+   ========================================= */
+
 @media (max-width: 1024px) {
     .story-container {
         grid-template-columns: 1fr;
@@ -952,27 +1079,256 @@ footer {
     .footer-grid {
         grid-template-columns: 1fr 1fr;
     }
+    .hero {
+        padding: 0 6%;
+    }
+    .products-section {
+        padding: 5rem 6%;
+    }
+    .story-section {
+        padding: 3rem 6% 6rem;
+    }
 }
 
 @media (max-width: 768px) {
-    .hero-title {
-        font-size: 3rem;
-    }
+    /* ------ Navigation ------ */
     nav {
-        padding: 1rem 2rem;
+        padding: 0.75rem 1.25rem;
+    }
+    nav.scrolled {
+        padding: 0.75rem 1.25rem;
     }
     .nav-links {
         display: none;
     }
-    .footer-grid {
-        grid-template-columns: 1fr;
+    .hamburger {
+        display: flex;
     }
-    .stat-card {
+    .mobile-nav-overlay {
+        display: block;
+        pointer-events: none;
+    }
+    .mobile-nav-overlay.open {
+        pointer-events: all;
+    }
+    /* Hide sign-in button on mobile (it's in the drawer) */
+    .nav-actions > a.cta-button {
         display: none;
     }
+
+    /* ------ Hero ------ */
+    .hero {
+        padding: 0 5%;
+        align-items: flex-end;
+        padding-bottom: 8rem;
+    }
+    .hero::after {
+        background: linear-gradient(to top, rgba(253,251,247,0.97) 0%, rgba(253,251,247,0.6) 50%, rgba(253,251,247,0.15) 100%);
+    }
+    .hero-content {
+        max-width: 100%;
+        margin-right: 0;
+        text-align: center;
+    }
+    .hero-title {
+        font-size: 2.4rem;
+        line-height: 1.2;
+    }
+    .hero-subtitle {
+        font-size: 1rem;
+        max-width: 100%;
+    }
+    .hero-buttons {
+        justify-content: center;
+        flex-wrap: wrap;
+    }
+    .stat-card,
     .artisan-hero-card {
-        bottom: 10%;
-        right: 5%;
+        display: none;
+    }
+    .scroll-indicator {
+        display: none;
+    }
+
+    /* ------ Products ------ */
+    .products-section {
+        padding: 3.5rem 5%;
+    }
+    .section-title {
+        font-size: 2.2rem;
+    }
+    .product-grid {
+        grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+        gap: 1.25rem;
+    }
+    .product-image-container {
+        height: 220px;
+    }
+
+    /* ------ Story ------ */
+    .story-section {
+        padding: 2rem 5% 4rem;
+    }
+    .story-container {
+        grid-template-columns: 1fr;
+        padding: 2rem;
+        gap: 2rem;
+    }
+    .story-content {
+        max-width: 100%;
+    }
+    .visual-stack {
+        height: 280px;
+    }
+    .overlay-card {
+        left: 0;
+        bottom: -15px;
+        padding: 1rem;
+        max-width: 80%;
+    }
+    .story-metrics {
+        gap: 1.5rem;
+        margin: 2rem 0;
+    }
+
+    /* ------ Footer ------ */
+    footer {
+        padding: 4rem 6% 2rem;
+        border-top-left-radius: 24px;
+        border-top-right-radius: 24px;
+    }
+    .footer-grid {
+        grid-template-columns: 1fr;
+        gap: 2rem;
+        margin-bottom: 2rem;
+    }
+
+    /* ------ Checkout / Cart ------ */
+    .checkout-grid {
+        grid-template-columns: 1fr;
+    }
+    .summary-card {
+        position: static;
+    }
+    .flow-container {
+        padding: 1rem 4%;
+    }
+    .cart-item {
+        gap: 1rem;
+        flex-wrap: wrap;
+    }
+    .cart-item img {
+        width: 80px;
+        height: 80px;
+    }
+
+    /* ------ Marketplace ------ */
+    .marketplace-layout {
+        grid-template-columns: 1fr;
+    }
+    .sidebar-filters {
+        position: static;
+        margin-bottom: 1.5rem;
+    }
+
+    /* ------ Product Detail ------ */
+    .product-detail-layout {
+        grid-template-columns: 1fr;
+        padding: 1.5rem 5%;
+        gap: 2rem;
+    }
+
+    /* ------ Dashboard ------ */
+    .dashboard-layout {
+        grid-template-columns: 1fr;
+    }
+    .dashboard-sidebar {
+        display: none;
+    }
+    .dashboard-main {
+        padding: 1.5rem;
+    }
+
+    /* ------ Auth pages ------ */
+    .auth-container {
+        padding: 2rem 1.5rem;
+    }
+}
+
+@media (max-width: 480px) {
+    /* ------ Nav ------ */
+    nav {
+        padding: 0.6rem 1rem;
+    }
+    .logo img {
+        height: 80px !important;
+    }
+
+    /* ------ Hero ------ */
+    .hero-title {
+        font-size: 1.9rem;
+    }
+    .hero-buttons {
+        flex-direction: column;
+        align-items: center;
+    }
+    .hero-buttons .cta-button {
+        width: 100%;
+        text-align: center;
+        justify-content: center;
+    }
+
+    /* ------ Products ------ */
+    .section-title {
+        font-size: 1.85rem;
+    }
+    .product-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 1rem;
+    }
+    .product-image-container {
+        height: 170px;
+    }
+    .product-name {
+        font-size: 1rem;
+    }
+    .price {
+        font-size: 1.15rem;
+    }
+
+    /* ------ Story ------ */
+    .story-container {
+        padding: 1.5rem;
+    }
+    .metric h3 {
+        font-size: 2rem;
+    }
+
+    /* ------ Footer ------ */
+    footer {
+        padding: 3rem 5% 1.5rem;
+    }
+
+    /* ------ Buttons ------ */
+    .cta-button {
+        padding: 0.7rem 1.25rem;
+        font-size: 0.9rem;
+    }
+
+    /* ------ Tables ------ */
+    table {
+        font-size: 0.82rem;
+    }
+    th, td {
+        padding: 0.6rem 0.5rem;
+    }
+
+    /* ------ Auth ------ */
+    .auth-container {
+        padding: 1.75rem 1.25rem;
+    }
+    .auth-header h2 {
+        font-size: 1.6rem;
     }
 }
 

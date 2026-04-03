@@ -2,7 +2,53 @@
 
 > **Connecting you directly with master artisans. Experience the warmth of tradition paired with the convenience of modern commerce.**
 
-DesiDirect is a full-featured, production-ready e-commerce web platform that bridges the gap between rural artisans and global buyers — ensuring 100% of profits flow directly to creators.
+![Mobile Friendly](https://img.shields.io/badge/Mobile-Friendly-brightgreen?style=flat-square&logo=googlechrome)
+![Responsive](https://img.shields.io/badge/Responsive-Yes-blue?style=flat-square)
+![Firebase](https://img.shields.io/badge/Backend-Firebase-orange?style=flat-square&logo=firebase)
+![Razorpay](https://img.shields.io/badge/Payments-Razorpay-blueviolet?style=flat-square)
+
+## 📱 Mobile Experience
+
+DesiDirect is fully responsive and mobile-friendly on all screen sizes — from small phones (320px) to tablets and desktops.
+
+### Mobile Navigation
+On screens ≤ 768px, the desktop nav links collapse into a smooth **slide-in drawer** triggered by an animated hamburger button (☰ → ✕).
+
+- **Hamburger button** — animated 3-line → X transition
+- **Slide-in drawer** — slides from the right with a blurred backdrop overlay
+- **Closes on**: link tap, outside tap, or `Escape` key
+- **Sign In** button moves into the drawer on mobile
+
+### Responsive Breakpoints
+
+| Breakpoint | Layout Changes |
+|---|---|
+| `≤ 1024px` | Story section goes single-column; sidebar filters become static |
+| `≤ 768px` | Hamburger nav · Hero text & buttons center · Floating cards hidden · Products grid adapts · Cart/Checkout stack vertically · Footer single-column |
+| `≤ 480px` | Hero buttons go full-width column · Product grid 2-column · Smaller font sizes · Touch-optimised button sizes |
+
+### Mobile-Optimised Pages
+
+| Page | Mobile Behaviour |
+|---|---|
+| **Home** | Full-screen parallax hero with centred content, simplified floating cards hidden |
+| **Marketplace** | Sidebar filters collapse above products; full-width grid |
+| **Products** | Auto-fill 2-column card grid |
+| **Cart** | Items and summary stack vertically |
+| **Checkout** | Form and summary in single column |
+| **Artisans** | Card grid auto-fits to screen width |
+| **Login / Signup** | Full-width auth card with adjusted padding |
+| **About** | Story section single-column |
+
+### Touch-Friendly Details
+- All interactive elements have **min 44×44px tap targets**
+- Cart and wishlist buttons are large enough for finger taps
+- No hover-only interactions — all states accessible via touch
+- Smooth `300ms` transitions on drawer and overlays
+
+---
+
+
 
 ---
 
