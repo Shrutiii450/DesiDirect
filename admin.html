@@ -108,7 +108,93 @@
                     <div class="card-hdr"><h3>Recent Activity</h3></div>
                     <div id="recentActivity"></div>
                 </div>
+
+                <!-- ── Database Status ── -->
+                <div class="section-card mt-2" id="dbStatusCard" style="margin-top:1.5rem;">
+                    <div class="card-hdr" style="display:flex;align-items:center;justify-content:space-between;">
+                        <h3 style="display:flex;align-items:center;gap:0.5rem;">
+                            <i class="bx bx-data" style="color:#27ae60;"></i> Database Status
+                        </h3>
+                        <span id="dbStatusBadge" style="display:inline-flex;align-items:center;gap:0.4rem;padding:0.3rem 0.9rem;border-radius:50px;font-size:0.78rem;font-weight:700;background:rgba(39,174,96,0.12);color:#27ae60;border:1px solid rgba(39,174,96,0.3);">
+                            <span style="width:8px;height:8px;border-radius:50%;background:#27ae60;display:inline-block;animation:dbPulse 1.8s ease-in-out infinite;"></span>
+                            Connected
+                        </span>
+                    </div>
+                    <style>
+                        @keyframes dbPulse {
+                            0%,100%{opacity:1;transform:scale(1);}
+                            50%{opacity:0.5;transform:scale(1.4);}
+                        }
+                        .db-info-grid {
+                            display:grid;
+                            grid-template-columns:repeat(auto-fill,minmax(200px,1fr));
+                            gap:1rem;
+                            margin-top:1rem;
+                        }
+                        .db-info-item {
+                            background:#f8fafb;
+                            border-radius:12px;
+                            padding:1rem 1.25rem;
+                            border:1px solid rgba(0,0,0,0.05);
+                            display:flex;
+                            align-items:center;
+                            gap:0.85rem;
+                        }
+                        .db-info-item i {
+                            font-size:1.5rem;
+                            color:#5a7575;
+                            flex-shrink:0;
+                        }
+                        .db-info-item .db-label { font-size:0.75rem;color:#aaa;margin-bottom:0.15rem; }
+                        .db-info-item .db-val   { font-size:1.05rem;font-weight:700;color:#2F4F4F; }
+                    </style>
+                    <div class="db-info-grid" id="dbInfoGrid">
+                        <div class="db-info-item">
+                            <i class="bx bx-server"></i>
+                            <div>
+                                <div class="db-label">Storage Type</div>
+                                <div class="db-val">localStorage</div>
+                            </div>
+                        </div>
+                        <div class="db-info-item">
+                            <i class="bx bx-cloud"></i>
+                            <div>
+                                <div class="db-label">Firebase Project</div>
+                                <div class="db-val" style="font-size:0.82rem;">desi-direct-847e2</div>
+                            </div>
+                        </div>
+                        <div class="db-info-item">
+                            <i class="bx bx-group"></i>
+                            <div>
+                                <div class="db-label">Total Users</div>
+                                <div class="db-val" id="db-total-users">—</div>
+                            </div>
+                        </div>
+                        <div class="db-info-item">
+                            <i class="bx bx-package"></i>
+                            <div>
+                                <div class="db-label">Total Products</div>
+                                <div class="db-val" id="db-total-products">—</div>
+                            </div>
+                        </div>
+                        <div class="db-info-item">
+                            <i class="bx bx-receipt"></i>
+                            <div>
+                                <div class="db-label">Total Orders</div>
+                                <div class="db-val" id="db-total-orders">—</div>
+                            </div>
+                        </div>
+                        <div class="db-info-item">
+                            <i class="bx bx-hdd"></i>
+                            <div>
+                                <div class="db-label">Storage Used</div>
+                                <div class="db-val" id="db-storage-size">—</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </section>
+
 
             <!-- ── CUSTOMERS ── -->
             <section class="adm-section" id="sec-customers">

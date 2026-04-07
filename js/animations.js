@@ -29,65 +29,8 @@
   /* =========================================================
      1. CUSTOM CURSOR + TRAIL
   ========================================================= */
-  function initCursorTrail() {
-    const cursor = document.getElementById('custom-cursor');
-    const trailContainer = document.getElementById('cursor-trail-container');
-    if (!cursor || !trailContainer) return;
-
-    // Only on non-touch devices
-    if (window.matchMedia('(hover: none)').matches) {
-      cursor.style.display = 'none';
-      return;
-    }
-
-    let mouseX = -100, mouseY = -100;
-    let curX = -100, curY = -100;
-
-    // Smooth cursor follow
-    function moveCursor() {
-      curX += (mouseX - curX) * 0.18;
-      curY += (mouseY - curY) * 0.18;
-      cursor.style.left = curX + 'px';
-      cursor.style.top  = curY + 'px';
-      requestAnimationFrame(moveCursor);
-    }
-    moveCursor();
-
-    document.addEventListener('mousemove', (e) => {
-      mouseX = e.clientX;
-      mouseY = e.clientY;
-
-      // Spawn trail dot
-      spawnTrailDot(e.clientX, e.clientY);
-    });
-
-    // Enlarged cursor on interactive elements
-    document.querySelectorAll('a, button, .product-card, .tilt-card, .wishlist-btn').forEach(el => {
-      el.addEventListener('mouseenter', () => cursor.classList.add('hovered'));
-      el.addEventListener('mouseleave', () => cursor.classList.remove('hovered'));
-    });
-
-    let dotFrame = 0;
-    function spawnTrailDot(x, y) {
-      dotFrame++;
-      if (dotFrame % 3 !== 0) return; // Every 3rd frame to control density
-
-      const dot = document.createElement('div');
-      dot.className = 'cursor-dot';
-      const size = Math.random() * 7 + 4;
-      const colors = ['#E2725B', '#F4A460', '#2F4F4F'];
-      const color = colors[Math.floor(Math.random() * colors.length)];
-      dot.style.cssText = `
-        left: ${x}px; top: ${y}px;
-        width: ${size}px; height: ${size}px;
-        background: ${color};
-        opacity: 0.6;
-      `;
-      trailContainer.appendChild(dot);
-
-      setTimeout(() => dot.remove(), 800);
-    }
-  }
+  // Cursor trail disabled — using default OS cursor
+  function initCursorTrail() { /* disabled */ }
 
   /* =========================================================
      2. SCROLL PROGRESS BAR
@@ -462,19 +405,7 @@
       document.body.insertBefore(progress, document.body.firstChild);
     }
 
-    // Custom cursor
-    if (!document.getElementById('custom-cursor')) {
-      const cur = document.createElement('div');
-      cur.id = 'custom-cursor';
-      document.body.appendChild(cur);
-    }
-
-    // Trail container
-    if (!document.getElementById('cursor-trail-container')) {
-      const trail = document.createElement('div');
-      trail.id = 'cursor-trail-container';
-      document.body.appendChild(trail);
-    }
+    // Custom cursor & trail disabled — using default OS cursor
   }
 
   /* =========================================================
@@ -640,8 +571,7 @@
       initParallaxEnhanced();
       initNavHover();
 
-      // Cursor trail last (needs DOM ready)
-      setTimeout(initCursorTrail, 100);
+      // Cursor trail disabled
     });
   }
 

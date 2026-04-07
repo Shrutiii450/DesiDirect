@@ -1,76 +1,196 @@
 // ============================================================
 // DesiDirect – js/products.js
-// Central product management module (localStorage-backed)
+// Product management module – Firestore-backed (shared DB)
+// localStorage is kept as a write-through cache / fallback.
 // ============================================================
 
 const STORAGE_KEY = 'desi_products';
 
-// ---- loadProducts ------------------------------------------------
-// Returns the full array of all products from localStorage
+// ── Firebase Firestore reference (compat SDK, loaded via CDN) ──────────────
+// firebase-app and firebase-firestore compat scripts must be loaded BEFORE
+// this file in any page that uses it.
+function _getFS() {
+    try { return firebase.firestore(); } catch(e) { return null; }
+}
+
+// ── localStorage helpers (cache / offline fallback) ────────────────────────
+function _cacheGet() {
+    try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]'); } catch { return []; }
+}
+function _cacheSet(arr) {
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(arr)); } catch(e) {}
+}
+
+// ────────────────────────────────────────────────────────────────────────────
+// loadProducts()
+// Synchronous fallback – returns the localStorage cache immediately.
+// Use loadProductsAsync() / loadProductsFromFirestore() for fresh data.
+// ────────────────────────────────────────────────────────────────────────────
 function loadProducts() {
+    return _cacheGet();
+}
+
+// ────────────────────────────────────────────────────────────────────────────
+// loadProductsFromFirestore()
+// Returns a Promise<Array> of all approved/active products from Firestore.
+// Also refreshes the local cache so offline/late loads still work.
+// ────────────────────────────────────────────────────────────────────────────
+async function loadProductsFromFirestore(filterArtisan) {
+    const fs = _getFS();
+    if (!fs) {
+        // Firebase not available – fall back to cache
+        console.warn('Firestore unavailable, using localStorage cache.');
+        let cached = _cacheGet();
+        if (filterArtisan) cached = cached.filter(p => p.artisanName === filterArtisan);
+        return cached;
+    }
+
     try {
-        return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
-    } catch {
-        return [];
+        let query = fs.collection('products').orderBy('uploadedAt', 'desc');
+        if (filterArtisan) query = query.where('artisanName', '==', filterArtisan);
+
+        const snap = await query.get();
+        const products = snap.docs.map(doc => ({ ...doc.data(), _docId: doc.id }));
+
+        // Keep local cache fresh
+        if (!filterArtisan) _cacheSet(products);
+
+        return products;
+    } catch (err) {
+        console.error('Firestore read error:', err);
+        // Fall back to cache
+        return _cacheGet();
     }
 }
 
-// ---- saveProducts ------------------------------------------------
+// ────────────────────────────────────────────────────────────────────────────
+// saveProducts() – kept for admin.js compat (writes cache only)
+// ────────────────────────────────────────────────────────────────────────────
 function saveProducts(products) {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(products));
+    _cacheSet(products);
 }
 
-// ---- addProduct --------------------------------------------------
-// Accepts a plain object; assigns a unique id and uploadedAt timestamp
-function addProduct(data) {
-    const products = loadProducts();
+// ────────────────────────────────────────────────────────────────────────────
+// addProduct()
+// Returns a Promise that resolves to the new product object.
+// ────────────────────────────────────────────────────────────────────────────
+async function addProduct(data) {
+    let producerUid = '';
+    try {
+        const u = JSON.parse(localStorage.getItem('desi_user') || '{}');
+        producerUid = u.uid || u.id || '';
+    } catch(e) {}
+
+    const artisan = data.artisanName || 'Local Artisan';
+    const nowISO  = new Date().toISOString();
+
     const product = {
-        id:           Date.now(),
+        id:           Date.now(),           // numeric id for cart / wishlist compat
         productName:  data.productName  || '',
+        name:         data.productName  || '',
         price:        parseInt(data.price) || 0,
         stock:        parseInt(data.stock) || 0,
         category:     data.category     || 'Handicrafts',
         description:  data.description  || '',
-        image:        data.image        || '',   // base64 dataURL or ''
-        artisanName:  data.artisanName  || 'Local Artisan',
-        uploadedAt:   new Date().toISOString()
+        image:        data.image        || '',
+        artisanName:  artisan,
+        producerName: artisan,
+        producerId:   producerUid,
+        status:       'approved',
+        uploadedAt:   nowISO
     };
-    products.push(product);
-    saveProducts(products);
+
+    // ── Write to Firestore (shared) ──
+    const fs = _getFS();
+    if (fs) {
+        try {
+            const ref = await fs.collection('products').add(product);
+            product._docId = ref.id;
+        } catch(err) {
+            console.error('Firestore write error:', err);
+        }
+    }
+
+    // ── Also update localStorage cache ──
+    const cached = _cacheGet();
+    cached.push(product);
+    _cacheSet(cached);
+
     return product;
 }
 
-// ---- deleteProduct -----------------------------------------------
-function deleteProduct(id) {
-    const products = loadProducts().filter(p => p.id !== parseInt(id));
-    saveProducts(products);
+// ────────────────────────────────────────────────────────────────────────────
+// deleteProduct()
+// id: numeric id (from product.id)
+// ────────────────────────────────────────────────────────────────────────────
+async function deleteProduct(id) {
+    const numId = parseInt(id);
+
+    // ── Delete from Firestore ──
+    const fs = _getFS();
+    if (fs) {
+        try {
+            // Find doc by numeric id
+            const snap = await fs.collection('products').where('id', '==', numId).get();
+            for (const doc of snap.docs) {
+                await doc.ref.delete();
+            }
+        } catch(err) {
+            console.error('Firestore delete error:', err);
+        }
+    }
+
+    // ── Remove from cache ──
+    _cacheSet(_cacheGet().filter(p => p.id !== numId));
 }
 
-// ---- editProduct -------------------------------------------------
-function editProduct(id, updatedData) {
-    const products = loadProducts().map(p => {
-        if (p.id !== parseInt(id)) return p;
-        return {
-            ...p,
-            productName:  updatedData.productName  || p.productName,
-            price:        parseInt(updatedData.price)  || p.price,
-            stock:        parseInt(updatedData.stock)  || p.stock,
-            category:     updatedData.category     || p.category,
-            description:  updatedData.description  !== undefined ? updatedData.description : p.description,
-            image:        updatedData.image        || p.image,
-            editedAt:     new Date().toISOString()
-        };
-    });
-    saveProducts(products);
+// ────────────────────────────────────────────────────────────────────────────
+// editProduct()
+// id: numeric id; updatedData: partial product fields
+// ────────────────────────────────────────────────────────────────────────────
+async function editProduct(id, updatedData) {
+    const numId = parseInt(id);
+    const newName = updatedData.productName;
+
+    const patch = {
+        ...(newName            && { productName: newName, name: newName }),
+        ...(updatedData.price  && { price: parseInt(updatedData.price) }),
+        ...(updatedData.stock  !== undefined && { stock: parseInt(updatedData.stock) }),
+        ...(updatedData.category    && { category: updatedData.category }),
+        ...(updatedData.description !== undefined && { description: updatedData.description }),
+        ...(updatedData.image  && { image: updatedData.image }),
+        editedAt: new Date().toISOString()
+    };
+
+    // ── Update in Firestore ──
+    const fs = _getFS();
+    if (fs) {
+        try {
+            const snap = await fs.collection('products').where('id', '==', numId).get();
+            for (const doc of snap.docs) {
+                await doc.ref.update(patch);
+            }
+        } catch(err) {
+            console.error('Firestore update error:', err);
+        }
+    }
+
+    // ── Update in cache ──
+    _cacheSet(_cacheGet().map(p => {
+        if (p.id !== numId) return p;
+        return { ...p, ...patch };
+    }));
 }
 
-// ---- renderProductCards ------------------------------------------
+// ────────────────────────────────────────────────────────────────────────────
+// renderProductCards()
 // mode: 'customer' | 'dashboard'
-// container: DOM element to append cards into
-function renderProductCards(products, container, mode = 'customer') {
+// ────────────────────────────────────────────────────────────────────────────
+function renderProductCards(products, container, mode) {
+    mode = mode || 'customer';
     container.innerHTML = '';
 
-    if (products.length === 0) {
+    if (!products || products.length === 0) {
         container.innerHTML = `
             <div style="grid-column:1/-1; text-align:center; padding:4rem 2rem; color:#999;">
                 <i class='bx bx-package' style="font-size:3rem; display:block; margin-bottom:1rem; opacity:0.4;"></i>
@@ -90,7 +210,9 @@ function renderProductCards(products, container, mode = 'customer') {
             ? `<span style="font-size:0.75rem;color:#2ecc71;font-weight:600;"><i class='bx bx-check-circle'></i> In Stock (${p.stock})</span>`
             : `<span style="font-size:0.75rem;color:#e74c3c;font-weight:600;"><i class='bx bx-x-circle'></i> Out of Stock</span>`;
 
-        const uploadDate = new Date(p.uploadedAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
+        const uploadDate = p.uploadedAt
+            ? new Date(p.uploadedAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })
+            : '–';
 
         const card = document.createElement('div');
 
@@ -108,11 +230,11 @@ function renderProductCards(products, container, mode = 'customer') {
                         <span class="category">${p.category}</span>
                         <div class="rating"><i class='bx bxs-star'></i> 4.8</div>
                     </div>
-                    <h3 class="product-name">${p.productName}</h3>
+                    <h3 class="product-name">${p.productName || p.name}</h3>
                     <p class="artisan-credit">By ${p.artisanName}</p>
                     <div style="margin-bottom:0.5rem;">${stockBadge}</div>
                     <div class="product-footer">
-                        <span class="price">₹${p.price.toLocaleString('en-IN')}</span>
+                        <span class="price">₹${(p.price || 0).toLocaleString('en-IN')}</span>
                         <button class="add-to-cart-btn" data-cart-id="${p.id}" onclick="addToCart(${p.id})">
                             <i class='bx bx-cart-add'></i>
                         </button>
@@ -130,10 +252,10 @@ function renderProductCards(products, container, mode = 'customer') {
                 <div style="flex:1; min-width:0;">
                     <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:0.5rem;">
                         <div>
-                            <h4 style="margin:0 0 0.2rem;color:var(--primary-color);font-size:1rem;">${p.productName}</h4>
+                            <h4 style="margin:0 0 0.2rem;color:var(--primary-color);font-size:1rem;">${p.productName || p.name}</h4>
                             <span style="font-size:0.78rem;color:#888;">${p.category} · Listed ${uploadDate}</span>
                         </div>
-                        <span style="font-weight:700;color:var(--secondary-color);font-size:1.05rem;">₹${p.price.toLocaleString('en-IN')}</span>
+                        <span style="font-weight:700;color:var(--secondary-color);font-size:1.05rem;">₹${(p.price || 0).toLocaleString('en-IN')}</span>
                     </div>
                     <div style="margin-top:0.6rem;display:flex;align-items:center;gap:1rem;flex-wrap:wrap;">
                         ${stockBadge}
@@ -155,24 +277,24 @@ function renderProductCards(products, container, mode = 'customer') {
     });
 }
 
-// ---- requireAuth ------------------------------------------------
-// Shows a branded sign-in prompt; returns true if logged in
+// ────────────────────────────────────────────────────────────────────────────
+// requireAuth() – shows sign-in prompt overlay if not logged in
+// ────────────────────────────────────────────────────────────────────────────
 function requireAuth(action) {
     try {
         const user = JSON.parse(localStorage.getItem('desi_user') || 'null');
-        if (user && user.uid) return true;  // authenticated
+        if (user && user.uid) return true;
     } catch (e) {}
 
-    // Not signed in — show prompt overlay
     const existing = document.getElementById('_authPromptOverlay');
     if (existing) existing.remove();
 
     const overlay = document.createElement('div');
     overlay.id = '_authPromptOverlay';
     overlay.style.cssText = [
-        'position:fixed', 'inset:0', 'z-index:99999',
-        'display:flex', 'align-items:center', 'justify-content:center',
-        'background:rgba(0,0,0,0.55)', 'backdrop-filter:blur(6px)',
+        'position:fixed','inset:0','z-index:99999',
+        'display:flex','align-items:center','justify-content:center',
+        'background:rgba(0,0,0,0.55)','backdrop-filter:blur(6px)',
         'animation:fadeIn .2s ease',
     ].join(';');
 
@@ -209,30 +331,30 @@ function requireAuth(action) {
         </div>`;
 
     document.body.appendChild(overlay);
-    // Close on backdrop click
     overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
     return false;
 }
 
-// ---- addToWishlist -----------------------------------------------
+// ────────────────────────────────────────────────────────────────────────────
+// addToWishlist()
+// ────────────────────────────────────────────────────────────────────────────
 function addToWishlist(productId, event) {
     if (event) event.stopPropagation();
     if (!requireAuth('add to wishlist')) return;
 
+    // Try Firestore cache first, then fall back to localStorage cache
     const products = loadProducts();
     const product  = products.find(p => p.id === productId);
     if (!product) return;
 
     try {
         const wishlist = JSON.parse(localStorage.getItem('desi_wishlist') || '[]');
-        const exists   = wishlist.find(i => i.id === productId);
-        if (!exists) {
+        if (!wishlist.find(i => i.id === productId)) {
             wishlist.push({ id: product.id, productName: product.productName,
                             price: product.price, image: product.image,
                             artisanName: product.artisanName });
             localStorage.setItem('desi_wishlist', JSON.stringify(wishlist));
         }
-        // Toggle heart icon
         const btn = event ? event.currentTarget : document.querySelector(`[onclick*="addToWishlist(${productId}"]`);
         if (btn) {
             btn.innerHTML = "<i class='bx bxs-heart' style='color:#e74c3c;'></i>";
@@ -241,10 +363,11 @@ function addToWishlist(productId, event) {
     } catch (e) { console.error('Wishlist error:', e); }
 }
 
-// ---- addToCart ---------------------------------------------------
-// Called from customer card "Add to Cart" buttons
+// ────────────────────────────────────────────────────────────────────────────
+// addToCart()
+// ────────────────────────────────────────────────────────────────────────────
 function addToCart(productId) {
-    if (!requireAuth('add to cart')) return;   // ← auth guard
+    if (!requireAuth('add to cart')) return;
 
     const products = loadProducts();
     const product  = products.find(p => p.id === productId);
@@ -271,7 +394,6 @@ function addToCart(productId) {
 
     localStorage.setItem(CART_KEY, JSON.stringify(cart));
 
-    // Visual feedback on the button
     const btn = document.querySelector(`[data-cart-id="${productId}"]`);
     if (btn) {
         const original = btn.innerHTML;
@@ -285,7 +407,5 @@ function addToCart(productId) {
         }, 1200);
     }
 
-    // Update nav badge (global helper from app.js)
     if (typeof updateCartBadges === 'function') updateCartBadges();
 }
-

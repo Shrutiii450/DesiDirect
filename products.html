@@ -8,6 +8,19 @@
     <link rel="stylesheet" href="css/style.css">
     <link rel="stylesheet" href="css/animations.css">
     <link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet'>
+    <!-- Firebase compat SDK (required for Firestore in non-module scripts) -->
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+    <script>
+      firebase.initializeApp({
+        apiKey:            "AIzaSyBcoRlmLZ8Mvs8YEfaX4Si1EA9K-ZXwIoo",
+        authDomain:        "desi-direct-847e2.firebaseapp.com",
+        projectId:         "desi-direct-847e2",
+        storageBucket:     "desi-direct-847e2.firebasestorage.app",
+        messagingSenderId: "592303930832",
+        appId:             "1:592303930832:web:488ba1526f970d53fa0dd5"
+      });
+    </script>
 </head>
 <body>
     <!-- Global Navigation -->
@@ -62,7 +75,14 @@
         </div>
 
         <!-- Dynamic product grid — populated by JS -->
-        <div id="productGrid" class="marketplace-grid" style="grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));"></div>
+        <div id="productGrid" class="marketplace-grid" style="grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));">
+            <!-- Loading state -->
+            <div id="productsLoading" style="grid-column:1/-1;text-align:center;padding:4rem 2rem;color:#999;">
+                <i class='bx bx-loader-alt' style="font-size:2.5rem;display:block;margin-bottom:1rem;opacity:0.5;animation:spin 1s linear infinite;"></i>
+                <p>Loading products…</p>
+            </div>
+        </div>
+        <style>@keyframes spin{to{transform:rotate(360deg)}}</style>
     </div>
 
     <!-- Global Footer -->
@@ -109,13 +129,19 @@
 
     <script src="js/products.js"></script>
     <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            const products = loadProducts();
-            const grid     = document.getElementById('productGrid');
+        document.addEventListener('DOMContentLoaded', async () => {
+            const grid = document.getElementById('productGrid');
 
             // Check for ?artisan= URL param (from artisans page "View Shop")
             const urlParams    = new URLSearchParams(window.location.search);
             const artisanParam = urlParams.get('artisan') || sessionStorage.getItem('artisan_filter') || '';
+
+            // ── Load from Firestore (shared, cross-user database) ──
+            let products = await loadProductsFromFirestore();
+
+            // Remove loading spinner
+            const loadingEl = document.getElementById('productsLoading');
+            if (loadingEl) loadingEl.remove();
 
             let filtered = products;
             if (artisanParam) {
@@ -140,7 +166,7 @@
 
             renderProductCards(filtered, grid, 'customer');
 
-            // Update subtitle with count if no artisan filter
+            // Update subtitle with count
             if (!artisanParam && products.length > 0) {
                 document.getElementById('productsSubtitle').textContent =
                     `${products.length} authentic handmade product${products.length !== 1 ? 's' : ''} from our artisans.`;

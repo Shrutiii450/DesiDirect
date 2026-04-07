@@ -165,17 +165,35 @@ function renderDashboard() {
     const actEl = $('recentActivity');
     if (!activity.length) {
         actEl.innerHTML = `<p class="no-activity"><i class="bx bx-bell-off"></i> No recent activity</p>`;
-        return;
+    } else {
+        actEl.innerHTML = activity.slice(0,10).map(a => `
+            <div class="activity-item">
+                <div class="act-icon" style="background:${a.color}"><i class="${a.icon}" style="color:${a.icolor}"></i></div>
+                <div class="act-content">
+                    <div class="act-title">${a.title}</div>
+                    <div class="act-time">${a.time}</div>
+                </div>
+            </div>`).join('');
     }
-    actEl.innerHTML = activity.slice(0,10).map(a => `
-        <div class="activity-item">
-            <div class="act-icon" style="background:${a.color}"><i class="${a.icon}" style="color:${a.icolor}"></i></div>
-            <div class="act-content">
-                <div class="act-title">${a.title}</div>
-                <div class="act-time">${a.time}</div>
-            </div>
-        </div>`).join('');
+
+    // ── DB Status Panel ──
+    const dbUsers    = $('db-total-users');
+    const dbProds    = $('db-total-products');
+    const dbOrds     = $('db-total-orders');
+    const dbStorage  = $('db-storage-size');
+    if (dbUsers)   dbUsers.textContent   = users.length;
+    if (dbProds)   dbProds.textContent   = products.length;
+    if (dbOrds)    dbOrds.textContent    = orders.length;
+    if (dbStorage) {
+        // Estimate localStorage usage
+        let total = 0;
+        try { for (const k in localStorage) { if (localStorage.hasOwnProperty(k)) total += (localStorage[k].length + k.length) * 2; } } catch(e) {}
+        dbStorage.textContent = total > 1048576
+            ? (total / 1048576).toFixed(2) + ' MB'
+            : (total / 1024).toFixed(1) + ' KB';
+    }
 }
+
 
 // ── CUSTOMERS ─────────────────────────────────────────────────────────────
 function renderCustomers(search = '') {
@@ -308,8 +326,8 @@ function renderProducts(search = '') {
         </tr></thead>
         <tbody>${list.map(p => `
         <tr>
-            <td><b>${p.name||'–'}</b></td>
-            <td>${p.producerName||'–'}</td>
+            <td><b>${p.productName || p.name || '–'}</b></td>
+            <td>${p.producerName || p.artisanName || '–'}</td>
             <td>${p.category||'–'}</td>
             <td>${fmtCur(p.price)}</td>
             <td>${p.stock ?? '–'}</td>
@@ -318,7 +336,7 @@ function renderProducts(search = '') {
                 ${(p.status||'approved') === 'pending'
                     ? `<button class="btn-action btn-success" onclick="approveProduct('${p.id}')"><i class="bx bx-check"></i> Approve</button>` : ''}
                 ${(p.status||'approved') !== 'removed'
-                    ? `<button class="btn-action btn-danger" onclick="removeProduct('${p.id}','${p.name}')"><i class="bx bx-x"></i> Remove</button>`
+                    ? `<button class="btn-action btn-danger" onclick="removeProduct('${p.id}','${p.productName||p.name}')"><i class="bx bx-x"></i> Remove</button>`
                     : `<button class="btn-action btn-info" onclick="approveProduct('${p.id}')"><i class="bx bx-revision"></i> Restore</button>`}
             </div></td>
         </tr>`).join('')}
